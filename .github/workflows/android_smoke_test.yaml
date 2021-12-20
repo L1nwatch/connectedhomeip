@@ -31,7 +31,7 @@ jobs:
             DOCKER_RUN_VERSION: 0.5.40
             GITHUB_CACHE_PATH: /tmp/android-smoke-cache/
 
-        runs-on: macos-latest
+        runs-on: ubuntu-latest
         steps:
           - name: checkout
             uses: actions/checkout@v2
