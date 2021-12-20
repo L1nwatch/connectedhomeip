@@ -16,4 +16,4 @@
 # limitations under the License.
 #
 
-adb devices
+/usr/local/lib/android/sdk/platform-tools/adb devices
