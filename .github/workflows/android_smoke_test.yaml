@@ -40,5 +40,5 @@ jobs:
           - name: start runner
             uses: reactivecircus/android-emulator-runner@v2
             with:
-              api-level: 29
+              api-level: 25
               script: sudo bash ./scripts/tests/android_tests.sh
