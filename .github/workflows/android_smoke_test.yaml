@@ -35,9 +35,10 @@ jobs:
         steps:
           - name: checkout
             uses: actions/checkout@v2
-
+          - name: test command
+            run: pwd && ls
           - name: start runner
             uses: reactivecircus/android-emulator-runner@v2
             with:
               api-level: 29
-              script: scriptes/tests/android_tests.sh
+              script: ./scripts/tests/android_tests.sh
