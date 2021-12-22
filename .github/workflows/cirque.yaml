@@ -117,7 +117,7 @@ jobs:
                      --privileged \
                      --volume /tmp:/tmp \
                      --volume /dev/pts:/dev/pts \
-                     -- scripts/tests/cirque_tests.sh run_test OnOffClusterTest
+                     -- scripts/tests/cirque_tests.sh run_test MobileDeviceTest
             - name: Uploading Binaries
               uses: actions/upload-artifact@v2
               if: ${{ always() }} && ${{ !env.ACT }}
