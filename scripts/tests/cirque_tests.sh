@@ -39,6 +39,7 @@ CIRQUE_TESTS=(
     "EchoOverTcpTest"
     "MobileDeviceTest"
     "InteractionModelTest"
+    "AndroidMediaTest"
 )
 
 BOLD_GREEN_TEXT="\033[1;32m"
