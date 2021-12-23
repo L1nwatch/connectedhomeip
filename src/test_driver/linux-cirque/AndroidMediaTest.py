@@ -32,16 +32,16 @@ sh.setFormatter(
         '%(asctime)s [%(name)s] %(levelname)s %(message)s'))
 logger.addHandler(sh)
 
+SETUPPINCODE = 20202021
+DISCRIMINATOR = 1  # Randomw number, not used
 CHIP_PORT = 5540
-
 CIRQUE_URL = "http://localhost:5000"
 CHIP_REPO = os.path.join(os.path.abspath(
     os.path.dirname(__file__)), "..", "..", "..")
-TEST_EXTPANID = "fedcba9876543210"
 
 DEVICE_CONFIG = {
     'device0': {
-        'type': 'MobileDevice',
+        'type': 'Android-server',
         'base_image': 'connectedhomeip/chip-cirque-device-base',
         'capability': ['Interactive', 'TrafficControl', 'Mount'],
         'rcp_mode': True,
@@ -50,7 +50,7 @@ DEVICE_CONFIG = {
         "mount_pairs": [[CHIP_REPO, CHIP_REPO]],
     },
     'device1': {
-        'type': 'CHIPEndDevice',
+        'type': 'CHIP-Tool',
         'base_image': 'connectedhomeip/chip-cirque-device-base',
         'capability': ['Thread', 'Interactive', 'TrafficControl', 'Mount'],
         'rcp_mode': True,
@@ -61,7 +61,7 @@ DEVICE_CONFIG = {
 }
 
 
-class TestPythonController(CHIPVirtualHome):
+class TestAndroidMediaCluster(CHIPVirtualHome):
     def __init__(self, device_config):
         super().__init__(CIRQUE_URL, device_config)
         self.logger = logger
@@ -70,57 +70,58 @@ class TestPythonController(CHIPVirtualHome):
         self.initialize_home()
 
     def test_routine(self):
-        self.run_controller_test()
+        self.run_media_cluster_test()
 
-    def run_controller_test(self):
-        ethernet_ip = [device['description']['ipv6_addr'] for device in self.non_ap_devices
-                       if device['type'] == 'CHIPEndDevice'][0]
-        server_ids = [device['id'] for device in self.non_ap_devices
-                      if device['type'] == 'CHIPEndDevice']
-        req_ids = [device['id'] for device in self.non_ap_devices
-                   if device['type'] == 'MobileDevice']
+    def run_media_cluster_test(self):
+        server_ip_address = set()
+
+        server_ids = [device['id']
+                      for device in self.non_ap_devices if device['type'] == 'Android-server']
+        tool_ids = [device['id']
+                    for device in self.non_ap_devices if device['type'] == 'CHIP-Tool']
+        tool_device_id = tool_ids[0]
 
         for server in server_ids:
-            self.execute_device_cmd(server, "CHIPCirqueDaemon.py -- run {} --thread".format(
-                os.path.join(CHIP_REPO, "out/debug/standalone/chip-all-clusters-app")))
+            app_path = os.path.join(
+                CHIP_REPO, "out/debug/standalone/chip-all-clusters-app")
+            self.execute_device_cmd(
+                server, f"CHIPCirqueDaemon.py -- run {app_path}")
+            server_ip_address.add(self.execute_device_cmd(server, "ipconfig"))
+            server_ip_address.add(self.execute_device_cmd(server, "ip r"))
+            server_ip_address.add(self.execute_device_cmd(server, "ifconfig"))
 
-        self.reset_thread_devices(server_ids)
+        chip_tool_path = os.path.join(
+            CHIP_REPO, "out/debug/standalone/chip-tool")
+        command = chip_tool_path + " onoff {} 1"
+        cmd_fail = "{} command failure: {}"
 
-        req_device_id = req_ids[0]
+        for ip in server_ip_address:
+            cmd = f"{chip_tool_path} pairing {SETUPPINCODE} {DISCRIMINATOR} {ip} {CHIP_PORT}"
+            ret = self.execute_device_cmd(tool_device_id, cmd)
+            self.assertEqual(ret['return_code'], '0',
+                             cmd_fail.format("pairing", ret['output']))
 
-        self.execute_device_cmd(req_device_id, "pip3 install {}".format(os.path.join(
-            CHIP_REPO, "out/debug/linux_x64_gcc/controller/python/chip-0.0-cp37-abi3-linux_x86_64.whl")))
+            ret = self.execute_device_cmd(tool_device_id, command.format("on"))
+            self.assertEqual(ret['return_code'], '0',
+                             cmd_fail.format("on", ret['output']))
 
-        command = "gdb -return-child-result -q -ex run -ex bt --args python3 {} -t 150 -a {}".format(
-            os.path.join(
-                CHIP_REPO, "src/controller/python/test/test_scripts/mobile-device-test.py"),
-            ethernet_ip)
-        ret = self.execute_device_cmd(req_device_id, command)
+            ret = self.execute_device_cmd(
+                tool_device_id, command.format("off"))
+            self.assertEqual(ret['return_code'], '0',
+                             cmd_fail.format("off", ret['output']))
 
-        self.assertEqual(ret['return_code'], '0',
-                         "Test failed: non-zero return code")
+            ret = self.execute_device_cmd(
+                tool_device_id, f"{chip_tool_path} pairing unpair")
+            self.assertEqual(ret['return_code'], '0', cmd_fail.format(
+                "pairing unpair", ret['output']))
 
-        # Check if the device is in thread network.
-        self.check_device_thread_state(
-            server_ids[0], expected_role=['leader'], timeout=5)
-
-        # Check if the device is attached to the correct thread network.
+        test_fail = "Media Cluster test failed: cannot find matching string from device {}"
         for device_id in server_ids:
-            reply = self.execute_device_cmd(device_id, 'ot-ctl extpanid')
-            self.assertEqual(reply['output'].split()[0].strip(), TEST_EXTPANID)
-
-        # Check if device can be controlled by controller
-        for device_id in server_ids:
-            self.logger.info("checking device log for {}".format(
-                self.get_device_pretty_id(device_id)))
-            self.assertTrue(self.sequenceMatch(self.get_device_log(device_id).decode('utf-8'), [
-                "Received command for Endpoint=1 Cluster=0x0000_0006 Command=0x0000_0001",
-                "Toggle on/off from 0 to 1",
-                "Received command for Endpoint=1 Cluster=0x0000_0006 Command=0x0000_0000",
-                "Toggle on/off from 1 to 0",
-                "No Cluster 0x0000_0006 on Endpoint 0xe9"]),
-                "Datamodel test failed: cannot find matching string from device {}".format(device_id))
+            self.logger.info(
+                f"checking device log for {self.get_device_pretty_id(device_id)}")
+            self.assertTrue(self.sequenceMatch(self.get_device_log(device_id).decode('utf-8'), ["OnOff"]),
+                            test_fail.format(device_id))
 
 
 if __name__ == "__main__":
-    sys.exit(TestPythonController(DEVICE_CONFIG).run_test())
+    sys.exit(TestAndroidMediaCluster(DEVICE_CONFIG).run_test())
