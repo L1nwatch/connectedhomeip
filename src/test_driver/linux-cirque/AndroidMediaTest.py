@@ -80,7 +80,7 @@ class TestAndroidMediaCluster(CHIPVirtualHome):
         for device in self.non_ap_devices:
             if device['type'] == 'Android-server':
                 server_ids_ips.append(
-                    device["id"], device["description"]["ipv6_addr"])
+                    [device["id"], device["description"]["ipv6_addr"]])
         tool_ids = [device['id']
                     for device in self.non_ap_devices if device['type'] == 'CHIP-Tool']
         tool_device_id = tool_ids[0]
