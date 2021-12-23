@@ -32,6 +32,7 @@ sh.setFormatter(
         '%(asctime)s [%(name)s] %(levelname)s %(message)s'))
 logger.addHandler(sh)
 
+NODE_ID = 11223344
 SETUPPINCODE = 20202021
 DISCRIMINATOR = 1  # Randomw number, not used
 CHIP_PORT = 5540
@@ -94,11 +95,11 @@ class TestAndroidMediaCluster(CHIPVirtualHome):
 
         chip_tool_path = os.path.join(
             CHIP_REPO, "out/debug/standalone/chip-tool")
-        command = chip_tool_path + " onoff {} 1"
+        command = f"{chip_tool_path} onoff {'{}'} {NODE_ID} 1"
         cmd_fail = "{} command failure: {}"
 
         for ip in server_ip_address:
-            cmd = f"{chip_tool_path} pairing ethernet {SETUPPINCODE} {DISCRIMINATOR} {ip} {CHIP_PORT}"
+            cmd = f"{chip_tool_path} pairing ethernet {NODE_ID} {SETUPPINCODE} {DISCRIMINATOR} {ip} {CHIP_PORT}"
             ret = self.execute_device_cmd(tool_device_id, cmd)
             self.assertEqual(ret['return_code'], '0',
                              cmd_fail.format("pairing", ret['output']))
@@ -113,15 +114,15 @@ class TestAndroidMediaCluster(CHIPVirtualHome):
                              cmd_fail.format("off", ret['output']))
 
             ret = self.execute_device_cmd(
-                tool_device_id, f"{chip_tool_path} pairing unpair")
+                tool_device_id, f"{chip_tool_path} pairing unpair {NODE_ID}")
             self.assertEqual(ret['return_code'], '0', cmd_fail.format(
                 "pairing unpair", ret['output']))
 
         test_fail = "Media Cluster test failed: cannot find matching string from device {}"
-        for device_id in server_ids:
+        for device_id, _ in server_ids_ips:
             self.logger.info(
                 f"checking device log for {self.get_device_pretty_id(device_id)}")
-            self.assertTrue(self.sequenceMatch(self.get_device_log(device_id).decode('utf-8'), ["OnOff"]),
+            self.assertTrue(self.sequenceMatch(self.get_device_log(device_id).decode('utf-8'), ["chip-all-clusters-app"]),
                             test_fail.format(device_id))
 
 
