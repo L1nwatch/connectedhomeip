@@ -75,19 +75,21 @@ class TestAndroidMediaCluster(CHIPVirtualHome):
     def run_media_cluster_test(self):
         server_ip_address = set()
 
-        server_ids = [device['id']
-                      for device in self.non_ap_devices if device['type'] == 'Android-server']
+        server_ids_ips = list()
+        for device in self.non_ap_devices:
+            if device['type'] == 'Android-server':
+                server_ids_ips.append(
+                    device["id"], device["description"]["ipv6_addr"])
         tool_ids = [device['id']
                     for device in self.non_ap_devices if device['type'] == 'CHIP-Tool']
         tool_device_id = tool_ids[0]
 
-        for server in server_ids:
+        for server_id, server_ip in server_ids_ips:
             app_path = os.path.join(
                 CHIP_REPO, "out/debug/standalone/chip-all-clusters-app")
             self.execute_device_cmd(
-                server, f"CHIPCirqueDaemon.py -- run {app_path}")
-            get_ip_cmd = "ifconfig eth0 | grep inet | awk '{print $2}'"
-            server_ip_address.add(self.execute_device_cmd(server, get_ip_cmd))
+                server_id, f"CHIPCirqueDaemon.py -- run {app_path}")
+            server_ip_address.add(server_ip)
 
         chip_tool_path = os.path.join(
             CHIP_REPO, "out/debug/standalone/chip-tool")
