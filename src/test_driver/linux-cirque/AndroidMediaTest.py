@@ -86,10 +86,8 @@ class TestAndroidMediaCluster(CHIPVirtualHome):
                 CHIP_REPO, "out/debug/standalone/chip-all-clusters-app")
             self.execute_device_cmd(
                 server, f"CHIPCirqueDaemon.py -- run {app_path}")
-            server_ip_address.add(self.execute_device_cmd(server, "ipconfig"))
-            server_ip_address.add(self.execute_device_cmd(server, "ip r"))
-            server_ip_address.add(self.execute_device_cmd(server, "ifconfig"))
-        self.logger.info(f"ip address:{server_ip_address}")
+            get_ip_cmd = "ifconfig eth0 | grep inet | awk '{print $2}'"
+            server_ip_address.add(self.execute_device_cmd(server, get_ip_cmd))
 
         chip_tool_path = os.path.join(
             CHIP_REPO, "out/debug/standalone/chip-tool")
