@@ -75,6 +75,7 @@ class TestAndroidMediaCluster(CHIPVirtualHome):
     def run_media_cluster_test(self):
         server_ip_address = set()
 
+        self.logger.info(self.non_ap_devices)
         server_ids_ips = list()
         for device in self.non_ap_devices:
             if device['type'] == 'Android-server':
