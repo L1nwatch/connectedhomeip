@@ -98,7 +98,7 @@ class TestAndroidMediaCluster(CHIPVirtualHome):
         cmd_fail = "{} command failure: {}"
 
         for ip in server_ip_address:
-            cmd = f"{chip_tool_path} pairing {SETUPPINCODE} {DISCRIMINATOR} {ip} {CHIP_PORT}"
+            cmd = f"{chip_tool_path} pairing ethernet {SETUPPINCODE} {DISCRIMINATOR} {ip} {CHIP_PORT}"
             ret = self.execute_device_cmd(tool_device_id, cmd)
             self.assertEqual(ret['return_code'], '0',
                              cmd_fail.format("pairing", ret['output']))
