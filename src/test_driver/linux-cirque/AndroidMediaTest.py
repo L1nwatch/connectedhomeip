@@ -89,6 +89,7 @@ class TestAndroidMediaCluster(CHIPVirtualHome):
             server_ip_address.add(self.execute_device_cmd(server, "ipconfig"))
             server_ip_address.add(self.execute_device_cmd(server, "ip r"))
             server_ip_address.add(self.execute_device_cmd(server, "ifconfig"))
+        self.logger.info(f"ip address:{server_ip_address}")
 
         chip_tool_path = os.path.join(
             CHIP_REPO, "out/debug/standalone/chip-tool")
