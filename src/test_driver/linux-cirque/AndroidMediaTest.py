@@ -34,7 +34,7 @@ logger.addHandler(sh)
 
 NODE_ID = 11223344
 SETUPPINCODE = 20202021
-DISCRIMINATOR = 1  # Randomw number, not used
+DISCRIMINATOR = 3840
 CHIP_PORT = 5540
 CIRQUE_URL = "http://localhost:5000"
 CHIP_REPO = os.path.join(os.path.abspath(
@@ -73,57 +73,74 @@ class TestAndroidMediaCluster(CHIPVirtualHome):
     def test_routine(self):
         self.run_media_cluster_test()
 
-    def run_media_cluster_test(self):
-        server_ip_address = set()
+    def _run_android_app(self, server_ids: list) -> None:
+        app_path = os.path.join(
+            CHIP_REPO, "out/debug/standalone/chip-all-clusters-app")
+        command = f"CHIPCirqueDaemon.py -- run {app_path}"
+        for server_id in server_ids:
+            self.execute_device_cmd(server_id, command)
 
-        self.logger.info(self.non_ap_devices)
-        server_ids_ips = list()
+    def _get_devices_information(self) -> dict:
+        result = dict({"Android-server": dict(), "CHIP-Tool": dict()})
         for device in self.non_ap_devices:
-            if device['type'] == 'Android-server':
-                server_ids_ips.append(
-                    [device["id"], device["description"]["ipv6_addr"]])
-        tool_ids = [device['id']
-                    for device in self.non_ap_devices if device['type'] == 'CHIP-Tool']
-        tool_device_id = tool_ids[0]
+            if (x := device["type"]) in result.keys():
+                result[x][device["id"]] = {
+                    "ipv6": device["description"]["ipv6_addr"]}
+        return result
 
-        for server_id, server_ip in server_ids_ips:
-            app_path = os.path.join(
-                CHIP_REPO, "out/debug/standalone/chip-all-clusters-app")
-            self.execute_device_cmd(
-                server_id, f"CHIPCirqueDaemon.py -- run {app_path}")
-            server_ip_address.add(server_ip)
-
+    def _get_test_command_list(self) -> list:
+        # chip-tool lowpower sleep 1 0
         chip_tool_path = os.path.join(
             CHIP_REPO, "out/debug/standalone/chip-tool")
-        command = f"{chip_tool_path} onoff {'{}'} {NODE_ID} 1"
-        cmd_fail = "{} command failure: {}"
+        on_off_command = f"{chip_tool_path} onoff {'{}'} {NODE_ID} 1"
+        result = [
+            ("pairing", f"{chip_tool_path} pairing ethernet {NODE_ID} {SETUPPINCODE} {DISCRIMINATOR} {'{ip}'} {CHIP_PORT}"),
+            #("on", on_off_command.format("on")),
+            #("off", on_off_command.format("off")),
+            ("sleep", f"{chip_tool_path} lowpower sleep {NODE_ID} 1"),
+            ("get MAC",
+             f"{chip_tool_path} wakeonlan read wake-on-lan-mac-address {NODE_ID} 1"),
+            #("playback-state",f"{chip_tool_path} mediaplayback read playback-state {NODE_ID} 3"),
+            ("paring unpair", f"{chip_tool_path} pairing unpair {NODE_ID}")
+        ]
+        return result
 
-        for ip in server_ip_address:
-            cmd = f"{chip_tool_path} pairing ethernet {NODE_ID} {SETUPPINCODE} {DISCRIMINATOR} {ip} {CHIP_PORT}"
-            ret = self.execute_device_cmd(tool_device_id, cmd)
-            self.assertEqual(ret['return_code'], '0',
-                             cmd_fail.format("pairing", ret['output']))
-
-            ret = self.execute_device_cmd(tool_device_id, command.format("on"))
-            self.assertEqual(ret['return_code'], '0',
-                             cmd_fail.format("on", ret['output']))
-
-            ret = self.execute_device_cmd(
-                tool_device_id, command.format("off"))
-            self.assertEqual(ret['return_code'], '0',
-                             cmd_fail.format("off", ret['output']))
-
-            ret = self.execute_device_cmd(
-                tool_device_id, f"{chip_tool_path} pairing unpair {NODE_ID}")
-            self.assertEqual(ret['return_code'], '0', cmd_fail.format(
-                "pairing unpair", ret['output']))
-
-        test_fail = "Media Cluster test failed: cannot find matching string from device {}"
-        for device_id, _ in server_ids_ips:
+    def _check_device_log(self, server_ids) -> None:
+        fail_meg = "Media Cluster test failed: cannot find matching string from device {}"
+        check_point = [
+            "Received spake2p msg1",
+            "Sent spake2p msg2",
+            "Received spake2p msg3"
+        ]
+        for device_id in server_ids:
+            device_log = self.get_device_log(device_id).decode('utf-8')
             self.logger.info(
                 f"checking device log for {self.get_device_pretty_id(device_id)}")
-            self.assertTrue(self.sequenceMatch(self.get_device_log(device_id).decode('utf-8'), ["chip-all-clusters-app"]),
-                            test_fail.format(device_id))
+            self.assertTrue(
+                self.sequenceMatch(device_log, check_point),
+                fail_meg.format(device_id)
+            )
+
+    def _run_test_command(self, tool_device_id, server_ip_address) -> None:
+        command_list = self._get_test_command_list()
+        fail_meg = "{} command failure: {}"
+        for ip in server_ip_address:
+            for name, cmd in command_list:
+                ret = self.execute_device_cmd(
+                    tool_device_id, cmd.format(ip=ip))
+                self.assertEqual(ret['return_code'], '0',
+                                 fail_meg.format(name, ret['output']))
+
+    def run_media_cluster_test(self):
+        devices_information = self._get_devices_information()
+        server_ids = list(devices_information["Android-server"].keys())
+        tool_device_id = list(devices_information["CHIP-Tool"].keys())[0]
+        server_ip_address = [x["ipv6"]
+                             for x in devices_information["Android-server"].values()]
+
+        self._run_android_app(server_ids)
+        self._run_test_command(tool_device_id, server_ip_address)
+        self._check_device_log(server_ids)
 
 
 if __name__ == "__main__":
