@@ -43,7 +43,7 @@ CHIP_REPO = os.path.join(os.path.abspath(
 DEVICE_CONFIG = {
     'device0': {
         'type': 'Android-server',
-        'base_image': 'connecedhomeip/chip-build-android',
+        'base_image': 'connecedhomeip/android-emulator:0.5.25',
         'capability': ['Interactive', 'TrafficControl', 'Mount'],
         'rcp_mode': True,
         'docker_network': 'Ipv6',
