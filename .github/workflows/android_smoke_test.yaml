@@ -38,7 +38,4 @@ jobs:
           - name: test command
             run: pwd && ls -laht
           - name: start runner
-            uses: reactivecircus/android-emulator-runner@v2
-            with:
-              api-level: 25
-              script: sudo bash ./scripts/tests/android_tests.sh
+            uses: connectedhomeip/android-emulator:0.5.25
