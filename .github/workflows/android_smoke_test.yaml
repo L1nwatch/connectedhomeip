@@ -42,6 +42,8 @@ jobs:
           #  run: apt update && apt install -y cpu-checker && kvm-ok
           - name: check android
             run: ls -alht /opt/android
+          - name: check env
+            run: echo $HOME && echo $ANDROID_AVD_HOME && echo $ANDROID_SDK_HOME
           - name: check emulator
             run: avdmanager list && emulator -list-avds
           - name: try emulator
