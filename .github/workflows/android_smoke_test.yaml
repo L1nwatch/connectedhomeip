@@ -43,6 +43,6 @@ jobs:
           - name: check android
             run: ls -alht /opt/android
           - name: check emulator
-            run: emulator -list-avds
+            run: avdmanager list && emulator -list-avds
           - name: try emulator
             run: emulator @emulator
