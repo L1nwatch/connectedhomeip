@@ -42,5 +42,7 @@ jobs:
           #  run: apt update && apt install -y cpu-checker && kvm-ok
           - name: check android
             run: ls -alht /opt/android
+          - name: check emulator
+            run: emulator -list-avds
           - name: try emulator
             run: emulator @emulator
