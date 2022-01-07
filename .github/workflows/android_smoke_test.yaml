@@ -32,12 +32,9 @@ jobs:
             GITHUB_CACHE_PATH: /tmp/android-smoke-cache/
 
         runs-on: ubuntu-latest
+        container: connectedhomeip/android-emulator:0.5.25
         steps:
           - name: checkout
             uses: actions/checkout@v2
           - name: test command
             run: pwd && ls -laht
-          - name: start runner
-            uses: connectedhomeip/android-emulator@0.5.25
-          - name: test command2
-            run: pwd && ls -alht
