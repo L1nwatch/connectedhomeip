@@ -32,23 +32,22 @@ jobs:
             GITHUB_CACHE_PATH: /tmp/android-smoke-cache/
 
         runs-on: ubuntu-latest
-        container: connectedhomeip/android-emulator:0.5.25
         steps:
           - name: checkout
             uses: actions/checkout@v2
           - name: test command
             run: pwd && ls -alht
-          #- name: check kvm
-          #  run: apt update && apt install -y cpu-checker && kvm-ok
-          - name: check android
-            run: ls -alht /opt/android && ls -alht /root/.android/avd/
-          - name: set env
-            run: export ANDROID_AVD_HOME=/root/.android/avd/
-          - name: copy avd
-            run: mkdir -p $HOME/.android/avd/ && cp -a /root/.android/avd/* $HOME/.android/avd/
-          - name: check env
-            run: echo $HOME && echo $ANDROID_AVD_HOME && echo $ANDROID_SDK_HOME
-          - name: check emulator
-            run: ls -alht $HOME && emulator -list-avds
+          - name: check kvm
+            run: apt update && apt install -y cpu-checker && kvm-ok
+          #- name: check android
+          #  run: ls -alht /opt/android && ls -alht /root/.android/avd/
+          #- name: set env
+          #  run: export ANDROID_AVD_HOME=/root/.android/avd/
+          #- name: copy avd
+          #  run: mkdir -p $HOME/.android/avd/ && cp -a /root/.android/avd/* $HOME/.android/avd/
+          #- name: check env
+          #  run: echo $HOME && echo $ANDROID_AVD_HOME && echo $ANDROID_SDK_HOME
+          #- name: check emulator
+          #  run: ls -alht $HOME && emulator -list-avds
           - name: try emulator
             run: emulator @emulator
