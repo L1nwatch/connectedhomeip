@@ -39,3 +39,5 @@ jobs:
             run: pwd && ls -laht
           - name: start runner
             uses: connectedhomeip/android-emulator:0.5.25
+          - name: test command2
+            run: pwd && ls -alht
