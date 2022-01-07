@@ -43,7 +43,7 @@ jobs:
           - name: check android
             run: ls -alht /opt/android
           - name: set env
-            run: export $ANDROID_AVD_HOME=/root/.android/avd/
+            run: export ANDROID_AVD_HOME=/root/.android/avd/
           - name: check env
             run: echo $HOME && echo $ANDROID_AVD_HOME && echo $ANDROID_SDK_HOME
           - name: check emulator
