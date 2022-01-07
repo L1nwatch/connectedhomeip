@@ -37,4 +37,8 @@ jobs:
           - name: checkout
             uses: actions/checkout@v2
           - name: test command
-            run: pwd && ls -laht
+            run: pwd && ls -alht
+          - name: check kvm
+            run: apt update && apt install -y cpu-checker && kvm-ok
+          - name: check android
+            run: ls -alht /opt/android–
